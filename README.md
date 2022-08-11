@@ -1,14 +1,24 @@
 # Project
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+## ComplianceActivationAssessment
+Use the ComplianceActivationAssesment.ps1 file as part of the Protect and Govern Sensitive Data Usage workshop
+Follow the instructions in the workshop guide run the script and include the output of the report as part of your final results for your customer
 
-As the maintainer of this project, please make a few updates:
+### Current Issues and Limitations
+1) The ComplianceActivationAssessment Report has only been tested against Commercial Office 365 Tenants.  If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
+2) Scripts have only been tested against English/Unicode lanuguages
+3) License Friendly Names MAY not exist for non commercial license SKUs
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+## WorkshopPOEReport
+Use the workshoppoereport.ps1 file as part of the Protect and Govern Sensitive Data Usage workshop
+Follow the instructions in the workshop guide run the script and include the output of the report as part of your final results for your customer
+
+### Current Issues and Limitations:
+1) The WorkshopPOE Report only works against Commercial Office 365 Tenants.  If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
+2) The WorkshopPOE Report currently uses the AzureAD powershell Module.  It will be updated to GraphAPI in a future version
+3) Scripts have only been tested against English/Unicode lanuguages
+
+
 
 ## Contributing
 
