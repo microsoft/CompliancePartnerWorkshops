@@ -526,7 +526,7 @@ Write-Host 'Connecting to Security & Compliance Center. Please logon in the new 
 Connect-IPPSSession
 Write-Host "Connecting to Azure AD. Please Logon in the new Window" -ForegroundColor DarkYellow
 Connect-AzureAD
-Write-Host "`r`n`r`n'nConnected to Microsoft 365, Continuing with Script`r`n`r`n" -ForegroundColor Yellow
+Write-Host "`r`n`r`nConnected to Microsoft 365, Continuing with Script`r`n`r`n" -ForegroundColor Yellow
 
 #######################
 #script activities
