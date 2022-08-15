@@ -7,6 +7,7 @@
 #project variables
 param ($reporttype='All',$reportpath=$env:LOCALAPPDATA)
 $outputfile=(Join-path ($reportpath) ("POEReport_" + [string](Get-Date -UFormat %Y%m%d%S) + ".html"))
+# $a is a variable that helps to build out the HTML report body.  Will update to something more descriptive at a later date
 $a=@()
 $policycounts= @()
 $sitcounts = @()
@@ -482,6 +483,41 @@ function get-dlppolicyruledetails($param){
     
     return $sitlist
     }
+function get-auditlogsummary(){
+    $audittable = @()
+    $auditlogpolicies = Get-UnifiedAuditLogRetentionPolicy
+    
+    foreach ($logpolicy in $auditlogpolicies){
+        $audithashtable = @{}
+    
+        if ($logpolicy.operations -gt 0){
+            $opslist = ($logpolicy.operations).split(",") 
+        }
+        else {
+            $opslist = $null
+        }
+    
+        $audithashtable= [Ordered]@{
+            Priority = $logpolicy.Priority
+            Name = $logpolicy.name
+            WhenCreated = $logpolicy.whencreated
+            Enabled = $logpolicy.enabled
+            RecordType = ($logpolicy.recordtypes -join ":::") | Out-String
+            Operations = ($opslist -join ":::") | Out-String
+            UsersAudited = ($logpolicy.userids).count
+            RetentionDuration = $logpolicy.RetentionDuration
+            
+        }
+    
+        #create the new object
+        $auditlogpolicyobject = [PSCustomObject]$audithashtable
+        $audittable += $auditlogpolicyobject
+                
+            
+    }
+    
+    return $audittable
+}
 
 
 #prepare the envrionment
@@ -616,6 +652,11 @@ foreach($dlppolicy in $dlppolicies){
     $a += "<hr>"
 }
 
+### section 3, gather the audit log configuration
+$auditlogsummary = get-auditlogsummary
+$auditchart = ($auditlogsummary | ConvertTo-Html -Fragment -PreContent "<h2>Unified Audit Log Policy Summary</h2>") -replace (":::","<br/>")
+$auditchart += "<hr>"
+
 ### section ,3 construct a unified summary table
 ###### doing this here as i couldn't get the function to return properly
 ###### future improvement - create a function that takes these 3 items and returns the formatted data
@@ -649,27 +690,41 @@ foreach ($item in $dlpsummarychart){
 }
 
 ###section 4, build our html file
-$reportintro = "<h1> Compliance Workshop: DLP Policy Configuration Report</h1>
-<p>The following document shows a snapshot of the current status of DLP Policy Confiugraiton Within the Microsoft 365 envrioment. </p>
-<p>Units in () indicate the number of protected users or sites </p>
-<p id='CreationDate'>Tenant Name: $((Get-AzureADTenantDetail).DisplayName)</p>
-<p id='CreationDate'>Creation Date: $(Get-Date)</p>
+$tenantdetails = Get-AzureADTenantDetail
+$scriptrunner = Get-AzureADCurrentSessionInfo
+
+$reportintro = "<h1> Compliance Workshop: Policy Configuration Report</h1>
+<p>The following document shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment. </p>
+<p>Units in <b>()</b> indicate the number of protected users or sites </p>
+<p id='CreationDate'><b>Report Creation Date:</b> $(Get-Date)
+<p id='CreationDate'><b>Tenant Name:</b> $($tenantdetails.DisplayName)
+<p id='CreationDate'><b>Tenant ID:</b> $($scriptrunner.TenantID)
+<p id='CreationDate'><b>Tenant Domain:</b> $($scriptrunner.TenantDomain)
+<p id='CreationDate'><b>Executed by</b>: $($scriptrunner.Account)</p>
+
 <br>"
 
 $reportdetails = "<h2>Individual Policy Details<h2>
 </hr2>"
 
 if($reporttype -match 'All'){
-    $poehtml = ($poechart | ConvertTo-Html -Fragment) -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml = ($poechart | ConvertTo-Html -PreContent "<h2>Compliance Workshop DLP POE Summary</h2>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poethml += "<hr>"
     #saving each of the individual reports here in case they are ever needed for troubleshooting the report rollup
     #$summaryhtml = $dlppolicysummary | ConvertTo-Html -Fragment
     #$policyhtml = $policycounts | convertto-html -Fragment
     #$sithtml = $sitcounts | ConvertTo-Html -Fragment
-    Convertto-html -Head $header -Body "$reportintro $poehtml $reportdetails $a" -Title "Compliance Workshop DLP Policy Configuration Report" | Out-File $outputfile 
+    Convertto-html -Head $header -Body "$reportintro $poehtml $auditchart $reportdetails $a" -Title "Compliance Workshop Policy Configuration Report" | Out-File $outputfile 
 }
 elseif($reporttype -match'POEOnly'){
-    $poehtml = ($poechart | ConvertTo-Html -PreContent "<h1>Compliance Workshop DLP POE Summary</h1>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    Convertto-html -Head $header -Body "$reportintro $poehtml " -Title "Compliance Workshop DLP Policy Report" | Out-File $outputfile 
+    $poehtml = ($poechart | ConvertTo-Html -PreContent "<h2>Compliance Workshop DLP POE Summary</h2>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Exchangeonline -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.OneDrive -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,OneDrive | ConvertTo-Html -PreContent "<h3>OneDrive DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.SharePoint -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,SharePoint | ConvertTo-Html -PreContent "<h3>SharePoint DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,Teams | ConvertTo-Html -PreContent "<h3>Teams DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += "<hr>"
+
+    Convertto-html -Head $header -Body "$reportintro $poehtml $auditchart" -Title "Compliance Workshop POE Report" | Out-File $outputfile 
 }
 
 #display report in browser

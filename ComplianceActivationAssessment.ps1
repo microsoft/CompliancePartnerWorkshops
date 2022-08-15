@@ -629,9 +629,17 @@ elseif ($reporttype -match 'Detailed') {
 }
 
 #generate the HTML Output
+
+$tenantdetails = Get-MgOrganization
+$scriptrunner = Get-MgContext
+
 $htmldetails = "<h1> Compliance Activation Assesment Report </h1>
 <p>The following document shows the current status of the license and service usage within the customers Microsoft 365 envrioment</p>
-<p id='CreationDate'>Creation Date: $(Get-Date)</p>"
+<p id='CreationDate'><b>Report Date:</b> $(Get-Date)</p>
+<p id='CreationDate'><b>Tenant Name:</b> $($tenantdetails.DisplayName)</p>
+<p id='CreationDate'><b>Tenant ID:</b> $($tenantdetails.ID)</p>
+<p id='CreationDate'><b>Tenant Domain:</b> $($tenantdetails.ID)</p>
+<p id='CreationDate'><b>Executed by</b>: $($scriptrunner.Account)</p>"
 
 $files = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2>"
 $tenantlicensedetails = $AllSku | Select-Object SkuPartNumber, ConsumedUnits, @{ n = 'TotalUnits'; e = { $_.prepaidunits.enabled } } | convertto-html -Fragment -PreContent "<h2>Microsoft 365 License Summary</h2>"
