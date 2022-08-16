@@ -24,14 +24,26 @@ $header = @"
 <style>
     h1 {
         font-family: Arial, Helvetica, sans-serif;
-        color: #0078D4;
+        color: #107C10;
         font-size: 32px;
     }
 
     h2 {
         font-family: Arial, Helvetica, sans-serif;
+        color: #107C10;
+        font-size: 26px;
+    }
+
+    h3 {
+        font-family: Arial, Helvetica, sans-serif;
         color: #737373;
         font-size: 20px;
+    }
+
+    h4 {
+        font-family: Arial, Helvetica, sans-serif;
+        color: #737373;
+        font-size: 16px;
     }
 
     table {
@@ -47,8 +59,7 @@ $header = @"
 	}
 
     th {
-        background: #0078D4;
-        #background: linear-gradient(#49708f, #293f50);
+        background: #107C10;
         color: #fff;
         font-size: 11px;
         text-transform: uppercase;
@@ -59,7 +70,16 @@ $header = @"
     tbody tr:nth-child(even) {
         background: #f0f0f2;
     }
-        
+
+    hr {
+        width:40%;
+        margin-left:0;
+        height:5px;
+        border-width:0;
+        color:gray;
+        background-color:gray
+    }
+     
     #CreationDate {
         font-family: Arial, Helvetica, sans-serif;
         color: #ff3300;
@@ -633,17 +653,19 @@ elseif ($reporttype -match 'Detailed') {
 $tenantdetails = Get-MgOrganization
 $scriptrunner = Get-MgContext
 
-$htmldetails = "<h1> Compliance Activation Assesment Report </h1>
-<p>The following document shows the current status of the license and service usage within the customers Microsoft 365 envrioment</p>
-<p id='CreationDate'><b>Report Date:</b> $(Get-Date)</p>
-<p id='CreationDate'><b>Tenant Name:</b> $($tenantdetails.DisplayName)</p>
-<p id='CreationDate'><b>Tenant ID:</b> $($tenantdetails.ID)</p>
-<p id='CreationDate'><b>Tenant Domain:</b> $($tenantdetails.ID)</p>
-<p id='CreationDate'><b>Executed by</b>: $($scriptrunner.Account)</p>"
+$reportstamp = "<p id='CreationDate'><b>Report Date:</b> $(Get-Date)<br>
+<b>Tenant Name:</b> $($tenantdetails.DisplayName)<br>
+<b>Tenant ID:</b> $($tenantdetails.ID)<br>
+<b>Tenant Domain:</b> $($tenantdetails.ID)<br>
+<b>Executed by</b>: $($scriptrunner.Account)</p>"
 
-$files = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2>"
-$tenantlicensedetails = $AllSku | Select-Object SkuPartNumber, ConsumedUnits, @{ n = 'TotalUnits'; e = { $_.prepaidunits.enabled } } | convertto-html -Fragment -PreContent "<h2>Microsoft 365 License Summary</h2>"
-Convertto-html -Head $header -Body " $htmldetails $tenantlicensedetails $files" -Title "Microsoft 365 Service Assesment Report" | Out-File $outputfile 
+$reporttitle = "<h1> Compliance Activation Assesment Report </h1>
+<p>The following document shows the current status of the license and service usage within the customers Microsoft 365 envrioment</p>"
+
+
+$summarylist = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2> $reportstamp"
+$tenantlicensedetails = $AllSku | Select-Object SkuPartNumber, ConsumedUnits, @{ n = 'TotalUnits'; e = { $_.prepaidunits.enabled } } | convertto-html -Fragment -PreContent "<h2>Microsoft 365 License Summary</h2> $reportstamp"
+Convertto-html -Head $header -Body "$reporttitle $tenantlicensedetails $summarylist" -Title "Microsoft 365 Service Assesment Report" | Out-File $outputfile 
 
 #display report in browser
 Write-Host "Report file available at: " $outputfile

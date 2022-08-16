@@ -6,7 +6,7 @@
 
 #project variables
 param ($reporttype='All',$reportpath=$env:LOCALAPPDATA)
-$outputfile=(Join-path ($reportpath) ("POEReport_" + [string](Get-Date -UFormat %Y%m%d%S) + ".html"))
+$outputfile=(Join-path ($reportpath) ("DLPReport_"+$reporttype+"_" + [string](Get-Date -UFormat %Y%m%d%S) + ".html"))
 # $a is a variable that helps to build out the HTML report body.  Will update to something more descriptive at a later date
 $a=@()
 $policycounts= @()
@@ -693,16 +693,24 @@ foreach ($item in $dlpsummarychart){
 $tenantdetails = Get-AzureADTenantDetail
 $scriptrunner = Get-AzureADCurrentSessionInfo
 
-$reportintro = "<h1> Compliance Workshop: Policy Configuration Report</h1>
-<p>The following document shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment. </p>
-<p>Units in <b>()</b> indicate the number of protected users or sites </p>
-<p id='CreationDate'><b>Report Creation Date:</b> $(Get-Date)
-<p id='CreationDate'><b>Tenant Name:</b> $($tenantdetails.DisplayName)
-<p id='CreationDate'><b>Tenant ID:</b> $($scriptrunner.TenantID)
-<p id='CreationDate'><b>Tenant Domain:</b> $($scriptrunner.TenantDomain)
-<p id='CreationDate'><b>Executed by</b>: $($scriptrunner.Account)</p>
+$reportstamp = "<p id='CreationDate'><b>Report Creation Date:</b> $(Get-Date)<br>
+<b>Tenant Name:</b> $($tenantdetails.DisplayName)<br>
+<b>Tenant ID:</b> $($scriptrunner.TenantID)<br>
+<b>Tenant Domain:</b> $($scriptrunner.TenantDomain)<br>
+<b>Executed by</b>: $($scriptrunner.Account)</p>
+"
 
-<br>"
+$reportintro = "<h1> Compliance Workshop: Policy Configuration Report</h1>
+<p><b>The following report shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
+<p>Units in <b>()</b> indicate the number of protected users or sites </p>"
+$reportintro+= $reportstamp
+
+
+$poeintro = "<h1> Compliance Workshop: Policy Configuration Report (POE Only)</h1>
+<p><b>The following report shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
+<p>Units in <b>()</b> indicate the number of protected users or sites </p>"
+$poeintro += $reportstamp
+
 
 $reportdetails = "<h2>Individual Policy Details<h2>
 </hr2>"
@@ -724,7 +732,7 @@ elseif($reporttype -match'POEOnly'){
     $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,Teams | ConvertTo-Html -PreContent "<h3>Teams DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
     $poehtml += "<hr>"
 
-    Convertto-html -Head $header -Body "$reportintro $poehtml $auditchart" -Title "Compliance Workshop POE Report" | Out-File $outputfile 
+    Convertto-html -Head $header -Body "$poeintro $poehtml $auditchart" -Title "Compliance Workshop POE Report" | Out-File $outputfile 
 }
 
 #display report in browser

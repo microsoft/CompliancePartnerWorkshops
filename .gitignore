@@ -3,3 +3,5 @@ Individual Function Test/test-get-dlppolicydetails.ps1
 Individual Function Test/test-get-dlppolicyruledetails.ps1
 Individual Function Test/test-new-POESummaryFile.ps1
 Individual Function Test/get-auditlogsummary.ps1
+Individual Function Test/CommandSwitch.ps1
+%1
