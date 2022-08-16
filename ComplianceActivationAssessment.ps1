@@ -656,11 +656,11 @@ $scriptrunner = Get-MgContext
 $reportstamp = "<p id='CreationDate'><b>Report Date:</b> $(Get-Date)<br>
 <b>Tenant Name:</b> $($tenantdetails.DisplayName)<br>
 <b>Tenant ID:</b> $($tenantdetails.ID)<br>
-<b>Tenant Domain:</b> $($tenantdetails.ID)<br>
+<b>Tenant Domain:</b> $($tenantdetails.VerifiedDomains | Where-Object {$_.isinitial -eq "True"} | select-object -expandproperty Name)<br>
 <b>Executed by</b>: $($scriptrunner.Account)</p>"
 
 $reporttitle = "<h1> Compliance Activation Assesment Report </h1>
-<p>The following document shows the current status of the license and service usage within the customers Microsoft 365 envrioment</p>"
+<p>The following document shows the current status of the license and service usage within the customers Microsoft 365 environment</p>"
 
 
 $summarylist = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2> $reportstamp"
