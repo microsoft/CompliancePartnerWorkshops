@@ -1,6 +1,6 @@
 ######  Summary #########################################
 # This Script will leverage Security and Compliance     #
-# Powershell and the Sharepoint PnP Powershell          #
+# Powershell, Sharepoint PnP Powershell, and ExO V2     #
 # to prepare the M365 development sandbox for the       #
 # workshop.  The account running the actions must be    #
 # a global administrator of the tenant                  #
