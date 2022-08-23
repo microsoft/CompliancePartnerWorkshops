@@ -76,7 +76,6 @@ $adminusers = $tenantusers | Where-Object {$_ -notin $OOTBusers}
 
 foreach ($adminuser in $adminusers){
     $adminemail = (get-user $adminuser).userprincipalname
-    Add-RoleGroupMember -identity "OrganizationManagement" -Member $adminemail
     Add-RoleGroupMember -Identity "ComplianceAdministrator" -Member $adminemail
     Add-RoleGroupMember -Identity "ediscoveryManager" -Member $adminemail
     Add-RoleGroupMember -Identity "ComplianceManagerAdministrators" -Member $adminemail
@@ -162,7 +161,7 @@ if ((Get-AdminAuditLogConfig).UnifiedAuditLogIngestionEnabled -match "False"){
         Write-Host "Organization Customization is not enabled. Enabling, please wait" -ForegroundColor Magenta
         Enable-OrganizationCustomization
     }
-      
+    Write-Host "Enabling the Unified Audit Log" -ForegroundColor Green  
     Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true
     }
 
@@ -173,3 +172,5 @@ if ((Get-AdminAuditLogConfig).UnifiedAuditLogIngestionEnabled -match "False"){
 Write-Host "Disconnecting Sessions for Cleanup" -ForegroundColor Green
 Disconnect-ExchangeOnline -Confirm:$false -ErrorAction:SilentlyContinue -InformationAction Ignore
 Disconnect-PnPOnline -InformationAction Ignore
+start-process "https://compliance.microsoft.com/"
+start-process "https://6glf4w.sharepoint.com/sites/Mark8ProjectTeam/Shared%20Documents/"
