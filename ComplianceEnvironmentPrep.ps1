@@ -172,5 +172,7 @@ if ((Get-AdminAuditLogConfig).UnifiedAuditLogIngestionEnabled -match "False"){
 Write-Host "Disconnecting Sessions for Cleanup" -ForegroundColor Green
 Disconnect-ExchangeOnline -Confirm:$false -ErrorAction:SilentlyContinue -InformationAction Ignore
 Disconnect-PnPOnline -InformationAction Ignore
-start-process "https://compliance.microsoft.com/"
-start-process "https://6glf4w.sharepoint.com/sites/Mark8ProjectTeam/Shared%20Documents/"
+
+### need to update these with variables when fixing up the other code ##
+#start-process "https://compliance.microsoft.com/"
+#start-process "https://6glf4w.sharepoint.com/sites/Mark8ProjectTeam/Shared%20Documents/"
