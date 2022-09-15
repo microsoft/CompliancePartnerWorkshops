@@ -5,3 +5,6 @@ Individual Function Test/test-new-POESummaryFile.ps1
 Individual Function Test/get-auditlogsummary.ps1
 Individual Function Test/CommandSwitch.ps1
 %1
+Individual Function Test/permissionscheck.ps1
+.gitignore
+Individual Function Test/testauditlog.ps1
