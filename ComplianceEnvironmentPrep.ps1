@@ -154,6 +154,7 @@ foreach ($document in $documents)
         Write-Host "Uploading file $document" -ForegroundColor Cyan
         $pnpresult = Add-PnPfile -path $document.FullName -folder "shared documents"
         $pnpcount +=1
+        $pnpresult > $null
 
     }
 
