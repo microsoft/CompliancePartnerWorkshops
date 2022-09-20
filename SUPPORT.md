@@ -11,3 +11,8 @@ For help and questions about using this project, please create an issue within t
 ## Microsoft Support Policy  
 
 Support for this **PROJECT or PRODUCT** is limited to the resources listed above.
+
+## Compliance Workshop Disclaimer
+The information, results, and scoring provided through the toolkit are recommendations and provided for general informational purposes only. They do not constitute legal advice, certifications, or guarantees regarding regulatory compliance; it is up to each organization to evaluate the effectiveness of these recommendations in their respective regulatory environment prior to implementation. Organizations should consult with their own legal professionals to determine how standards or regulations apply to their organization and how to best ensure compliance.
+
+MICROSOFT MAKES NO WARRANTIES, EXPRESS, IMPLIED, OR STATUTORY. Microsoft disclaims any conditions, express or implied, or other terms that use of the Microsoft products or services will ensure the organization’s compliance with regulations or standards. This toolkit is provided “as-is.” Information and recommendations expressed in the toolkit may change without notice. The toolkit does not provide the user with any legal rights to any intellectual property in any Microsoft product or service. Use of the tool is for internal, reference purposes only; however, Microsoft partners may distribute the toolkit to their customers for such customers’ internal, reference purposes only. Any distribution of the  toolkit by a Microsoft partner to its customers must include terms consistent with those set forth in this disclaimer. 
