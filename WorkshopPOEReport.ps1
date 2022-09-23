@@ -1,5 +1,8 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
 ############################
-#Compliance workshop DLP Policy Report
+#Protect and Govern Sensitive Data Activator - Workshop POE Report
 #Author: Jim Banach
 #Version 1.0 - October,2022
 ##################################

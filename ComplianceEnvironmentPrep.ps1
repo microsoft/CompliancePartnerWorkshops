@@ -1,3 +1,12 @@
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+############################
+#Mitigate Compliance and Privacy Risks Activator - Envrionment Prep
+#Author: Jim Banach
+#Version 1.0 - October,2022
+##################################
+
 ######  Summary #########################################
 # This Script will leverage Security and Compliance     #
 # Powershell, Sharepoint PnP Powershell, and ExO V2     #

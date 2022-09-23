@@ -1,5 +1,8 @@
 # Project
 
+Scripts and Files to support the Compliance Partner Build Intent Workshops (https://aka.ms/mci/workshops)
+
+
 ## ComplianceActivationAssessment
 Use the ComplianceActivationAssesment.ps1 file as part of the Protect and Govern Sensitive Data Activator
 Follow the instructions in the workshop guide run the script and include the output of the report as part of your final results for your customer

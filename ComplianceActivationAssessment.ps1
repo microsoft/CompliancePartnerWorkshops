@@ -1,9 +1,15 @@
-####
-# Compliance Workshop License Assessment Script
-# Leverages the Microsoft Graph License Management report from the following module
+# Copyright (c) Microsoft Corporation.
+# Licensed under the MIT license.
+
+#####################################
+# Compliance Workshops M365 License Assessment Script
+# Author: Jim Banach
+# Version 1.0 - October,2022
+#
+# Leverages the Microsoft Graph License Management report (with permission) from the following module
 # #https://github.com/Canthv0/MSOLLicenseManagement
 # 
-####
+#####################################
 
 
 #project variables
