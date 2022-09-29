@@ -727,7 +727,7 @@ if($reporttype -match 'All'){
     #$sithtml = $sitcounts | ConvertTo-Html -Fragment
     Convertto-html -Head $header -Body "$reportintro $poehtml $auditchart $reportdetails $a" -Title "Compliance Workshop Policy Configuration Report" | Out-File $outputfile 
 }
-elseif($reporttype -match'POEOnly'){
+elseif($reporttype -match'POEReport'){
     $poehtml = ($poechart | ConvertTo-Html -PreContent "<h2>Compliance Workshop DLP POE Summary</h2>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
     $poehtml += ($poechart | Where-Object {$_.Exchangeonline -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
     $poehtml += ($poechart | Where-Object {$_.OneDrive -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,OneDrive | ConvertTo-Html -PreContent "<h3>OneDrive DLP Policies</h3>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
