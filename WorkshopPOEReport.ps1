@@ -507,7 +507,7 @@ function get-auditlogsummary(){
             Enabled = $logpolicy.enabled
             RecordType = ($logpolicy.recordtypes -join ":::") | Out-String
             Operations = ($opslist -join ":::") | Out-String
-            UsersAudited = ($logpolicy.userids).count
+            UsersAudited = ($logpolicy.UserIds).split(",").count
             RetentionDuration = $logpolicy.RetentionDuration
             
         }
