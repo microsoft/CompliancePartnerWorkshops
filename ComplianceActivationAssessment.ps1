@@ -13,7 +13,7 @@
 
 
 #project variables
-param ($reporttype='Simple',$reportpath=$env:LOCALAPPDATA)
+param ($reporttype='Simple',$reportpath=$env:LOCALAPPDATA,[switch]$LargeTenant=$false)
 $global:logfile = Join-path ($env:LOCALAPPDATA)("Local")
 $Plans = @()
 $FriendlyLicenses= @{}
@@ -586,7 +586,7 @@ else {
 }
 
 #check to see if the MSOLlicense management module is installed and install it if it is not
-if (get-installedmodule -Name MSOLLicenseManagement -ErrorAction SilentlyContinue) {
+if (get-installedmodule -Name MSOLLicenseManagement -MinimumVersion 3.0.4 -ErrorAction SilentlyContinue) {
     Write-Host "License Management Module Installed, Continuing with Script Execution"
 }
 else {
@@ -597,7 +597,8 @@ else {
     $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
     if ($decision -eq 0) {
         Write-Host 'Your choice is Yes, installing module'
-        Install-Module MSOLLicenseManagement -scope CurrentUser -SkipPublisherCheck -Force -Confirm:$false 
+        Install-Module MSOLLicenseManagement -scope CurrentUser -SkipPublisherCheck -Force -Confirm:$false
+        Import-Module MSOLLicenseManagement -Force 
     } else {
         Write-Host 'Please install the module manually to continue https://github.com/Canthv0/MSOLLicenseManagement'
         Exit
@@ -607,12 +608,26 @@ else {
 Write-Host 'Connecting to the Microsoft Graph, Please logon in the new window' -ForegroundColor DarkYellow
 connect-MgGraph -Scopes 'User.Read.All','Organization.Read.All','Directory.Read.All'
 
-#run the license report
-if(test-path $temppath -ErrorAction SilentlyContinue){
-    Get-MGUserLicenseReport -OverWrite
+
+#create a user array to deal with large tenants
+if($LargeTenant){
+    $largeuser = get-mguser | Select-Object userprincipalname -first 100
+
+    if(test-path $temppath -ErrorAction SilentlyContinue){
+        Get-MGUserLicenseReport -OverWrite -Users $largeuser
+    }
+    else{
+    Get-MGUserLicenseReport -Users $largeuser
+    }
 }
 else{
-Get-MGUserLicenseReport
+    #run the license report
+    if(test-path $temppath -ErrorAction SilentlyContinue){
+        Get-MGUserLicenseReport -OverWrite
+    }
+    else{
+        Get-MGUserLicenseReport 
+    }
 }
 $list = import-csv $temppath
 
@@ -668,8 +683,13 @@ $reportstamp = "<p id='CreationDate'><b>Report Date:</b> $(Get-Date)<br>
 $reporttitle = "<h1> Compliance Activation Assesment Report </h1>
 <p>The following document shows the current status of the license and service usage within the customers Microsoft 365 environment</p>"
 
+if($LargeTenant){
+    $summarylist = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2> $reportstamp <p>IMPORTANT: Only a sample of the users below are represented. This report shows the content for  $($largeuser.count) users</p>"
+}
+else{
+    $summarylist = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2> $reportstamp"   
+}
 
-$summarylist = $outputlist | ConvertTo-Html -Fragment -PreContent "<h2>Individual Service Summary</h2> $reportstamp"
 $tenantlicensedetails = $AllSku | Select-Object SkuPartNumber, ConsumedUnits, @{ n = 'TotalUnits'; e = { $_.prepaidunits.enabled } } | convertto-html -Fragment -PreContent "<h2>Microsoft 365 License Summary</h2> $reportstamp"
 Convertto-html -Head $header -Body "$reporttitle $tenantlicensedetails $summarylist" -Title "Microsoft 365 Service Assesment Report" | Out-File $outputfile 
 
