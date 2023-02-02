@@ -4,6 +4,7 @@
 #####################################
 # Compliance Workshops M365 License Assessment Script
 # Author: Jim Banach
+# Contact:  jim.banach@microsoft.com
 # Version 1.0 - October,2022
 #
 # Leverages the Microsoft Graph License Management report (with permission) from the following module
