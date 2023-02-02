@@ -17,7 +17,6 @@ param ($reporttype='Simple',$reportpath=$env:LOCALAPPDATA,[switch]$LargeTenant=$
 $global:logfile = Join-path ($env:LOCALAPPDATA)("Local")
 $Plans = @()
 $FriendlyLicenses= @{}
-$temppath = Join-path ($env:LOCALAPPDATA) ("License_Report_" + [string](Get-Date -UFormat %Y%m%d) + ".csv")
 $outputfile=(Join-path ($reportpath) ("ActivationReport_" + [string](Get-Date -UFormat %Y%m%d%S) + ".html"))
 
 #table to capture our outputs
@@ -96,7 +95,7 @@ $header = @"
 
 #list of all of the current friendly sku product names - https://docs.microsoft.com/en-us/azure/active-directory/enterprise-users/licensing-service-plan-reference 
 $FriendlyLicenses = @{
-    "AAD_BASIC"="MICROSOFT AZURE ACTIVE DIRECTORY BASIC"
+"AAD_BASIC"="MICROSOFT AZURE ACTIVE DIRECTORY BASIC"
 "AAD_BASIC_EDU"="Azure Active Directory Basic for Education"
 "AAD_EDU"="Azure Active Directory for Education"
 "AAD_PREMIUM"="Azure Active Directory Premium Plan 1"
@@ -279,7 +278,7 @@ $FriendlyLicenses = @{
 "EXCHANGE_S_ENTERPRISE"="EXCHANGE ONLINE (PLAN 2)"
 "EXCHANGE_S_ENTERPRISE_GOV"="Exchange Online (Plan 2) for Government"
 "EXCHANGE_S_ESSENTIALS"="EXCHANGE ESSENTIALS"
-"EXCHANGE_S_FOUNDATION "="Exchange Foundation "
+"EXCHANGE_S_FOUNDATION"="Exchange Foundation"
 "EXCHANGE_S_FOUNDATION_GOV"="Exchange Foundation for Government"
 "EXCHANGE_S_STANDARD"="Exchange Online (Plan 1)"
 "EXCHANGE_S_STANDARD_GOV"="Exchange Online (Plan 1) for Government"
@@ -539,6 +538,7 @@ $FriendlyLicenses = @{
 "VISIO_CLIENT_SUBSCRIPTION"="Visio Desktop App"
 "VISIOONLINE"="Visio Web App"
 "VISIOONLINE_GOV"="VISIO WEB APP FOR GOVERNMENT"
+"VIVAENGAGE_CORE"="Viva Engage"
 "VIVA_LEARNING_SEEDED"="Viva Learning Seeded "
 "WHITEBOARD_FIRSTLINE1"="Whiteboard (Firstline)"
 "WHITEBOARD_PLAN1"="Whiteboard (Plan 1)"
@@ -611,25 +611,17 @@ connect-MgGraph -Scopes 'User.Read.All','Organization.Read.All','Directory.Read.
 
 #create a user array to deal with large tenants
 if($LargeTenant){
-    $largeuser = get-mguser | Select-Object userprincipalname -first 100
-
-    if(test-path $temppath -ErrorAction SilentlyContinue){
-        Get-MGUserLicenseReport -OverWrite -Users $largeuser
-    }
-    else{
+    $largeuser = get-mguser | Select-Object userprincipalname -first 100 
     Get-MGUserLicenseReport -Users $largeuser
-    }
 }
 else{
-    #run the license report
-    if(test-path $temppath -ErrorAction SilentlyContinue){
-        Get-MGUserLicenseReport -OverWrite
-    }
-    else{
-        Get-MGUserLicenseReport 
-    }
+    Get-MGUserLicenseReport 
 }
-$list = import-csv $temppath
+
+## before we import the list, we want to make sure that we have the most recent file output by get-mguserlicensereport, depending on how long the process the script runs it may spill over a day and not have the same date as the temp path check"
+## for this to work, we are now making the assumption that the LAST License_Report file in the folder is the most recent. 
+$reportitem = Get-ChildItem $env:LOCALAPPDATA | Where-Object {$_.Name -like "License_Report_*"} | Sort-Object LastWriteTime | Select-Object -expand FullName -last 1
+$list = import-csv $reportitem
 
 #Get all of the availible SKUs in tenant
 $AllSku = Get-MgSubscribedSku 2>%1
