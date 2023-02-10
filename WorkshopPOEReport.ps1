@@ -433,8 +433,42 @@ function get-dlppolicyruledetails($param){
         else{
             $ruledisabled="Yes"
         }
+        ### new content to deal with advaned rules
 
-        if($null -ne $rule.ContentContainsSensitiveInformation){
+        if($rule.IsAdvancedRule -like 'True'){
+            #### do all the code for the advanced processing
+            $rulejson = $rule.AdvancedRule | convertfrom-json | Select-Object -ExpandProperty Condition | Select-Object -ExpandProperty SubConditions
+
+            foreach ($ruleitem in $rulejson){
+                if ($ruleitem.ConditionName -like "ContentContainsSensitiveInformation"){
+                    $sitgroups = $ruleitem | Select-Object -ExpandProperty Value | Select-Object -ExpandProperty Groups 
+
+                    foreach($sitgroup in $sitgroups){
+                    $sitruledetails = $sitgroup | Select-Object -ExpandProperty SensitiveTypes
+
+                        foreach ($sitrule in $sitruledetails){
+                            $shash = [ordered]@{
+                            RuleGroup = $rulename
+                            Name = $sitrule.name
+                            RuleEnabled = $ruledisabled
+                            ClassifierType = if($sitrule.ClassifierType){$sitrule.ClassifierType}else{"Content"}
+                            MinCount = $sitrule.Minconfidence
+                            MaxCount = $sitrule.Maxconfidence
+                            ConfidenceLevel = $sitrule.Confidencelevel
+                            }
+                        $sobject = New-Object PSObject -Property $shash
+                        $sitlist += $sobject
+                        }
+                    
+                    }
+
+                }
+
+            }
+
+        }
+
+        elseif($null -ne $rule.ContentContainsSensitiveInformation){
         
             #check if more than one group of Sit's exsits in the policy
             if($null -ne $rule.ContentContainsSensitiveInformation.groups){
@@ -481,7 +515,7 @@ function get-dlppolicyruledetails($param){
                          $sitlist += $sobject
                      }
                  }
-        }
+        }      
     }
     
     return $sitlist
@@ -615,9 +649,10 @@ foreach($dlppolicy in $dlppolicies){
         $adminalert = $rule.GenerateAlert
         $alertthreshold = $rule.AlertProperties.threshold
         $notifyuser = ($null -ne $rule.NotifyUser) -or ($null -ne $rule.NotifyEndpointUser)
+        $advancedrule = if($rule.IsAdvancedRule -like "True"){"Yes"}else{"No"}
         
         $allruleschart = get-dlppolicyruledetails ($dlppolicy.name) 
-        $rulechart = $allruleschart | Where-Object {$_.RuleGroup -eq $rulename} | Select-Object Name,RuleEnabled,Classifiertype,mincount,maxcount,confidencelevel
+        $rulechart = $allruleschart | Where-Object {$_.RuleGroup -eq $rulename} | Select-Object Name,RuleEnabled,classifiertype,mincount,maxcount,confidencelevel
         $rulehtml = ($rulechart | convertto-html -Fragment) -replace ("-1","Any") 
 
         ####get a count of sits by policy name
@@ -632,6 +667,7 @@ foreach($dlppolicy in $dlppolicies){
 
         $htmloutput += "<p> <b>Rule Name:</b> $($rulename)<br>
         <b>Rule Enabled:</b> $($ruledisabled)<br>
+        <b>Advanced Rule (Complex Conditions):</b> $($advancedrule)<br>
         <b>Admin Alerts:</b> $($adminalert)<br>
         <b>Alert Threshold:</b> $($alertthreshold)<br>
         <b>User Notification:</b> $($notifyuser)</p>"
