@@ -452,8 +452,8 @@ function get-dlppolicyruledetails($param){
                             Name = $sitrule.name
                             RuleEnabled = $ruledisabled
                             ClassifierType = if($sitrule.ClassifierType){$sitrule.ClassifierType}else{"Content"}
-                            MinCount = $sitrule.Minconfidence
-                            MaxCount = $sitrule.Maxconfidence
+                            MinCount = $sitrule.Mincount
+                            MaxCount = $sitrule.Maxcount
                             ConfidenceLevel = $sitrule.Confidencelevel
                             }
                         $sobject = New-Object PSObject -Property $shash

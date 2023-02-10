@@ -32,8 +32,8 @@
                             Name = $sitrule.name
                             RuleEnabled = $ruledisabled
                             ClassifierType = if($sitrule.ClassifierType){$sitrule.ClassifierType}else{"Content"}
-                            MinCount = $sitrule.Minconfidence
-                            MaxCount = $sitrule.Maxconfidence
+                            MinCount = $sitrule.Minconunt
+                            MaxCount = $sitrule.Maxcount
                             ConfidenceLevel = $sitrule.Confidencelevel
                             }
                         $sobject = New-Object PSObject -Property $shash
