@@ -72,10 +72,51 @@ $pos = $orgname.indexof("@")
 $orgname = $orgname.substring($pos+1)
 $orgname = $orgname.split(".")
 $orgname = $orgname[0]
-$sposite = "https://$orgname.sharepoint.com/sites/Mark8ProjectTeam"
+$adminsite = "https://$orgname-admin.sharepoint.com"
+$spobasesite = "https://$orgname.sharepoint.com/sites/Mark8ProjectTeam"
 
+#connect to PNP find the site that has Mark8 in the name and make sure it is the correct base URL.  If not we rename it (to avoid rework of Power Automates)
 Write-host "Connecting to SharePoint Online, Please logon in the new window" -ForegroundColor yellow
-Connect-PnPOnline -url $SPOSite -Interactive
+Connect-PnPOnline -url $adminsite -Interactive
+$sposite = (Get-PnPTenantSite -Template "GROUP#0" | Where-Object {$_.url -like "*Mark8*"}).url
+
+#if the two sites do not match, let's make sure there isn't a bad site in the back end and then rename them
+if ($sposite -ne $spobasesite){
+    Write-Host "Renaming SharePoint Site: This may take some time with limited onscreen progress. Please Wait" -ForegroundColor Green
+    Write-Host "Checking for Site in Site Recycle Bin" -ForegroundColor Yellow
+    if (Get-PnPTenantDeletedSite -url $spobasesite){
+        Write-Host "SharePoint Site $spobasesite Found in Recycle Bin, Removing " -ForegroundColor Yellow
+        $deletedsite = Get-PnPTenantDeletedSite -Url $spobasesite 
+        Remove-PnPTenantDeletedSite -Identity $deletedsite -Force -nowait
+        Write-Host "Site Deleted, Starting Rename" -ForegroundColor Yellow
+        Rename-PnPTenantSite -Identity $sposite -NewSiteUrl $spobasesite -Wait
+    } 
+}
+
+#check loop just in case the rename executes very fast and other parts do not catch up as quickly (avoiding race condition)
+$spositecheck = (Get-PnPTenantSite -Template "GROUP#0" | Where-Object   {$_.url -like "*Mark8*"}).url
+$i = 0
+Write-Host "Checking for SPO Site Match"
+do {
+    $i ++
+    $spositecheck = (Get-PnPTenantSite -Template "GROUP#0" | Where-Object {$_.url -like "*Mark8*"}).url
+    if ($spositecheck -eq $spobasesite) {break}
+    Start-Sleep -Seconds 5  
+}
+while ($i -lt 5)
+
+$sposite = (Get-PnPTenantSite -Template "GROUP#0" | Where-Object {$_.url -like "*Mark8*"}).url
+if ($sposite -eq $spobasesite){
+    Write-Host "Sharepoint URL Confirmed: Continuing with operations"
+    Connect-PnPOnline -Url $sposite -Interactive
+}
+else{
+    Write-Host "Site $spobasesite does not exist in the tenant.  Please check the URL in the sharepoint admin center and try again later" -ForegroundColor Red
+    Write-Host "Disconnecting Sessions for Cleanup" -ForegroundColor Green
+    Disconnect-ExchangeOnline -Confirm:$false -ErrorAction:SilentlyContinue -InformationAction Ignore
+    Disconnect-PnPOnline -InformationAction Ignore
+    Exit
+}
 
 #set the compliance portal permissions
 
@@ -176,7 +217,7 @@ Remove-Item $tempfile
 
 #create SITs
 #we are looking for the existence of this specific rule package as a catch before creating it
-if((Get-DlpSensitiveInformationTypeRulePackage).RuleCollectionName -match "MRUS Rule Package"){
+if((Get-DlpSensitiveInformationTypeRulePackage).RuleCollectionName -match "MRUS Rule Pack"){
     Write-Host "Sensitive Information Types already exist, Continuing with Script" -ForegroundColor Yellow
 }
 

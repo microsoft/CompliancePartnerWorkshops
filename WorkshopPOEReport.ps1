@@ -4,7 +4,7 @@
 ############################
 #Protect and Govern Sensitive Data Activator - Workshop POE Report
 #Author: Jim Banach
-#Version 1.0 - October,2022
+#Version 1.2 - February, 2023
 ##################################
 
 #project variables
