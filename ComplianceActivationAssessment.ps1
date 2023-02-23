@@ -18,7 +18,6 @@ if ($null -eq $env:LOCALAPPDATA) {
     Write-Host "This script requires the LOCALAPPDATA environment variable to be set."
     # Ask the user for the path to a writable folder that can be used to store the output of the script
     $env:LOCALAPPDATA = Read-Host -Prompt "Please enter the path to a folder where the script can store its output and restart the script"
-    # stop execution of the script
     $reportpath=$env:LOCALAPPDATA
 }
 $global:logfile = Join-path ($env:LOCALAPPDATA)("Local")
