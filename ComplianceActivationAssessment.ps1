@@ -693,7 +693,17 @@ Convertto-html -Head $header -Body "$reporttitle $tenantlicensedetails $summaryl
 
 #display report in browser
 Write-Host "Report file available at: " $outputfile
-Start-Process $outputfile
+# Use the appropriate command to open the file in the default browser
+if ($IsMacOS -eq $true){ 
+	& open $outputfile
+}
+elseif ($IsLinux -eq $true){
+    & xdg-open $outputfile
+}
+else{
+    Start-Process $outputfile
+}
+
 
 #cleanup
 Disconnect-MgGraph
