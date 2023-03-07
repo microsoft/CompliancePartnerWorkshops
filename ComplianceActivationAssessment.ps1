@@ -5,15 +5,11 @@
 # Compliance Workshops M365 License Assessment Script
 # Author: Jim Banach
 # Version 1.5 - March, 2023
-#
-# Leverages the Microsoft Graph License Management report (with permission) from the following module
-# #https://github.com/Canthv0/MSOLLicenseManagement
-# 
-#####################################
+######################################
 
 
 #project variables
-param ($reporttype='Simple',$reportpath=$env:LOCALAPPDATA,[switch]$LargeTenant=$false,[switch]$usecustomlist=$false,[string]$listpath)
+param ($ReportType='Simple',$ReportPath=$env:LOCALAPPDATA,[switch]$LargeTenant=$false,[switch]$UseCustomList=$false,[string]$ListPath)
 if ($null -eq $env:LOCALAPPDATA) {
     Write-Host "This script requires the LOCALAPPDATA environment variable to be set."
     # Ask the user for the path to a writable folder that can be used to store the output of the script
@@ -612,6 +608,7 @@ $FriendlyLicenses = @{
     "PRIVACY_MANGEMENT_RISK"="Priva Privacy Risk Management"  
     "PRIVACY_MANGEMENT_DSR"="Priva Privacy DSR"
     "MIP_S_EXCHANGE_CO"="Microsoft Information Protection"
+    "DYN365_CDS_VIRAL"="Microsoft Dynamics Common Data Service (Free)"
 }    
 #check to see if the Microsoft Graph Modules are installed
 if (get-installedmodule -Name Microsoft.Graph -ErrorAction SilentlyContinue) {
@@ -774,6 +771,54 @@ else{
     Start-Process $outputfile
 }
 
-
 #cleanup
 Disconnect-MgGraph
+
+<#
+.SYNOPSIS
+Creates a report of Microsoft 365 License and Feature Usage
+
+.DESCRIPTION
+The Compliance Activation Assessment is a PowerShell script-based assessment that leverages Microsoft Graph to gather information about current Microsoft 365 usage. The assessment will generate a report that provides details about license and service usage for the Microsoft tenant.
+
+.PARAMETER ReportType
+Specifies which products to display in the service summary:
+Simple (Default) - Only Display Compliance Related Services
+Detailed - Shows all services in the tenant
+
+.PARAMETER ReportPath
+Specifics the location to save the report and temporary files.  
+Default location is the local appdata folder for the logged on user on Windows PCs if not specified.
+MacOS and Linux clients will always prompt for the path
+
+.PARAMETER LargeTenant
+Troubleshooting paramter, useful if you are having timeout issues with the script in extermely large tenants.
+Will return the first 100 users in the tenant and generate the report off their information.  Use the customlist option before using this option.
+
+.PARAMETER UseCustomList
+Prompts for a csv file of users to evaualte as part of the script processing. List must be a csv of valid user principal names.
+Invalid users in the list will throw an exception during the running of the script.  This is the preferred option if you are running into timeout issues running against a very large tenant. 
+
+.PARAMETER ListPath
+Provide a direct path to the csv file used for the custom list.  If this paramter is not specificed when using the custom list, a dialog box will prompt to select a file.
+
+.EXAMPLE
+PS> .\ComplianceActivationAssessment.ps1
+Provides the default report output for the customers tenant. Minimum required for workshop delivery
+
+.EXAMPLE
+PS> .\ComplianceActivationAssessment.ps1 -reportpath c:\temp
+Saves the report output to the folder c:\temp
+
+.EXAMPLE
+PS> .\ComplianceActivationAssessment.ps1 -ReportType Detailed -UseCustomList -ListPath c:\temp\dataprotectusers.csv
+Provides a full report of all active services for the user principal names identified in the dataprotectusers.csv file
+
+.NOTES
+Leverages the Microsoft Graph License Management report (with permission) from the following module https://github.com/Canthv0/MSOLLicenseManagement
+
+.LINK
+Find the most recent version of the script here:
+https://github.com/microsoft/CompliancePartnerWorkshops
+
+#>
