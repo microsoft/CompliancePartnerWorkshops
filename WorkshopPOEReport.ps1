@@ -8,7 +8,11 @@
 ##################################
 
 #project variables
-param ($reporttype='All',$reportpath=$env:LOCALAPPDATA)
+param (
+    [ValidateSet("All","POEReport")]
+    [string]$reporttype='All',
+    [string]$reportpath=$env:LOCALAPPDATA
+)
 if ($null -eq $env:LOCALAPPDATA) {
     Write-Host "This script requires the LOCALAPPDATA environment variable to be set."
     # Ask the user for the path to a writable folder that can be used to store the output of the script
@@ -815,3 +819,38 @@ else{
 Write-Host "Disconnecting Services" -ForegroundColor Yellow
 Disconnect-ExchangeOnline -Confirm:$false -ErrorAction:SilentlyContinue  -InformationAction Ignore
 Disconnect-MgGraph
+
+<#
+.SYNOPSIS
+Creates a report of the configured DLP Policies in the Tenant
+
+.DESCRIPTION
+The DLP Policy Configuration Report is a PowerShell script based assessment that leverages the Microsoft Security and Compliance PowerShell and Microsoft Graph PowerShell to gather information about the current configuration of Data Loss Prevention (DLP) Policies within the tenant. The assessment will generate a report that provides a summary of all configured DLP Policies, details about protected workloads and locations, as well as Policy Rule details for each DLP Policy in the Microsoft tenant.
+
+.PARAMETER ReportType
+Specifies which products to display in the service summary:
+All (Default) - Provides detailed readout of relevant configuration settings for each DLP Policy
+PoEReport - Builds the reports for submission of the Proof of Execution
+
+.PARAMETER ReportPath
+Specifics the location to save the report and temporary files.  
+Default location is the local appdata folder for the logged on user on Windows PCs if not specified.
+MacOS and Linux clients will always prompt for the path
+
+.EXAMPLE
+PS> .\WorkshopPOEReport.ps1
+Provides the default report output for all DLP Policy information in the customers tenant. 
+
+.EXAMPLE
+PS> .\WorkshopPOEReport.ps1 -reportpath c:\temp
+Saves the report output to the folder c:\temp
+
+.EXAMPLE
+PS> .\ComplianceActivationAssessment.ps1 -ReportType POEReport
+Generates the report in a format applicable for the Proof of Execution
+
+.LINK
+Find the most recent version of the script here:
+https://github.com/microsoft/CompliancePartnerWorkshops
+
+#>
