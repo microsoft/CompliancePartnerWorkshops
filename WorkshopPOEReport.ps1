@@ -4,11 +4,17 @@
 ############################
 #Protect and Govern Sensitive Data Activator - Workshop POE Report
 #Author: Jim Banach
-#Version 1.2 - February, 2023
+#Version 1.5 - March, 2023
 ##################################
 
 #project variables
 param ($reporttype='All',$reportpath=$env:LOCALAPPDATA)
+if ($null -eq $env:LOCALAPPDATA) {
+    Write-Host "This script requires the LOCALAPPDATA environment variable to be set."
+    # Ask the user for the path to a writable folder that can be used to store the output of the script
+    $env:LOCALAPPDATA = Read-Host -Prompt "Please enter the path to a folder where the script can store its output and restart the script"
+    $reportpath=$env:LOCALAPPDATA
+}
 $outputfile=(Join-path ($reportpath) ("DLPReport_"+$reporttype+"_" + [string](Get-Date -UFormat %Y%m%d%S) + ".html"))
 # $a is a variable that helps to build out the HTML report body.  Will update to something more descriptive at a later date
 $a=@()
@@ -168,8 +174,7 @@ function get-dlpolicysummary{
 function get-dlppolicydetails($param){
     
     $policy = get-dlpcompliancepolicy -Identity $param
-    
-    
+        
     #the array we will return
     $dlppolicydetailtable = @()
     
@@ -215,8 +220,9 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
             $exmemberitemstring = $exmemberitemstring.split(":")[1] -replace '["]'
             
             #get the number of users in the group and add it to the counter
-            $exgroup = Get-AzureADGroup -SearchString $exmemberitemstring
-            try{$exgroupcount = (Get-AzureADGroupMember -ObjectId $exgroup.objectid -all $true -ErrorAction SilentlyContinue).Count }
+            $exgroup = Get-MgGroup -Filter "DisplayName eq '$exmemberitemstring'"
+
+            try{$exgroupcount = (Get-MgGroupMember -GroupId $exgroup.id -all -ErrorAction SilentlyContinue).Count }
             catch{$exgroupcount = 0}
             $exchangememberscount += $exgroupcount
             
@@ -225,7 +231,6 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
             $exchangemembers += $exmemberitemstring
             }
         }
-            #write-host "Exchange is enabled for" $exchangemembers
     }
     
     #sharePoint Activity Block
@@ -235,7 +240,6 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
         if($policy.SharePointLocation.name -eq "All"){
             $sharepointlocations += "All Sites"
             $sharepointlocationscount = "All Sites"
-            #write-host "OneDrive is enabled for" $sharepointlocations
         }
 
         else{
@@ -246,18 +250,15 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
             $sharepointlocationscount++
             }
         }
-    
-        #write-host "SharePoint is enabled for" $sharepointlocations
     }
     
     #onedrive Activity Block
     if ($policy.OneDriveLocation.Count -gt 0){
         write-host $policy.name "Policy is Enabled for OneDrive" -ForegroundColor Yellow
         
-        if($policy.OneDriveSharedBy.count -eq 0){
+        if($policy.OneDriveSharedBy.count -eq 0 -and $policy.OneDriveSharedByMemberOf.count -eq 0){
             $onedrivemembers += "All Users"
             $onedrivememberscount = "All Users"
-            #write-host "OneDrive is enabled for" $onedrivemembers
         }
 
         else{
@@ -273,68 +274,66 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
                     $odmemberstring = $odmemberstring.split(":")[1] -replace '["]'               
                     $onedrivemembers += $odmemberstring
                     $onedrivememberscount++
-                    }
-                    #write-host "OneDrive is enabled for" $onedrivemembers
                 }
             }
-            #get individual onedrive sites
-            if ($policy.OneDriveSharedByMemberOf.Count -gt 0){
-                $odsitelist = $policy.OneDriveSharedByMemberOf
-                $odsitelist = $odsitelist | Select-Object -unique
+        }
         
-                foreach($odsite in $odsitelist){
-                    $odsiteitem = $odsite.split(",")
-                    $odsiteitem = $odsiteitem | Select-String -Pattern 'Display'
-                    [string]$odsitestring = $odsiteitem
-                    $odsitestring = $odsitestring.split(":")[1] -replace '["]'
+        #get individual onedrive sites
+        if ($policy.OneDriveSharedByMemberOf.Count -gt 0){
+            $odsitelist = $policy.OneDriveSharedByMemberOf
+            $odsitelist = $odsitelist | Select-Object -unique
+        
+            foreach($odsite in $odsitelist){
+                $odsiteitem = $odsite.split(",")
+                $odsiteitem = $odsiteitem | Select-String -Pattern 'Display'
+                [string]$odsitestring = $odsiteitem
+                $odsitestring = $odsitestring.split(":")[1] -replace '["]'
                     
-                    #get the number of users in the group and add it to the counter
-                    $odgroup = Get-AzureADGroup -SearchString $odsitestring
-                    try{$odgroupcount = (Get-AzureADGroupMember -ObjectId $odgroup.objectid -all $true).Count}
-                    catch{$odgroupcount = 0}
-                    $onedrivesitescount += $odgroupcount
+                #get the number of users in the group and add it to the counter
+                $odgroup = Get-MgGroup -Filter "DisplayName eq '$odsitestring'"
+                    
+                try{$odgroupcount = (Get-MgGroupMember -GroupId $odgroup.id -all -ErrorAction SilentlyContinue).Count}
+                catch{$odgroupcount = 0}
+                    
+                $onedrivesitescount += $odgroupcount
             
-                    #return the string with the count of that group in parentheses
-                    $odsitestring = $odsitestring + " (" + $odgroupcount + ")"                                
-                    $onedrivesites += $odsitestring
-                }
-                #write-host "OneDrive is enabled for Members of:"
+                #return the string with the count of that group in parentheses
+                $odsitestring = $odsitestring + " (" + $odgroupcount + ")"                                
+                $onedrivesites += $odsitestring
             }
+        }
     }
 
     #Teams Activity Block
     if ($policy.TeamsLocation.Count -gt 0){
     write-host $policy.name "Policy is Enabled for Teams" -ForegroundColor Yellow
 
-        if($policy.TeamsLocation.name -eq "All"){
+        if($policy.TeamsLocation.name -like 'All'){
             $teamslocations += "All Teams"
             $teamslocationscount = "All Users"
         }
     
         else{
-            foreach($teamitem in $policy.TeamsLocation) {
-                try{$teamuser = Get-AzureADUser -ObjectId $teamitem.immutableidentity -ErrorAction SilentlyContinue}
-                catch{$teamgroup = get-azureadgroup -ObjectId $teamitem.immutableidentity -ErrorAction SilentlyContinue}
-            
-                if ($teamuser.ObjectId -eq $teamitem.immutableidentity){
+            foreach($teamitem in $policy.TeamsLocation){
+                If ($teamitem.type -like 'IndividualResource'){
                     $usertext = "User: " 
                     $teamdata = $usertext + $teamitem.Displayname
                     $teamslocations += $teamdata
                     $teamslocationscount++
                 }
-                elseif($teamgroup.Objectid -eq $teamitem.immutableidentity){
-                    #get the count of the members of each team group
-                    try{$teamgroupcount = (Get-AzureADGroupMember -ObjectId $teamgroup.objectid -all $true).Count}
+                elseif($teamitem.type -like 'Group'){
+                    # get the count of the members of each team group
+                    #try{$teamgroupcount = (Get-AzureADGroupMember -ObjectId $teamgroup.objectid -all $true).Count}
+                    try{$teamgroupcount = (Get-MgGroupMember -GroupId $teamitem.immutableidentity -all -ErrorAction SilentlyContinue).Count}
                     catch{$teamgroupcount = 0}
                     
                     $grouptext = "Group: " 
                     $teamdata = $grouptext + $teamitem.Displayname + " (" + $teamgroupcount + ")"                    
                     $teamslocations += $teamdata
                     $teamslocationscount += $teamgroupcount
-                }
+                }                 
             }
-        }        
-        #write-host "Teams is enabled for" $teamslocations
+        }
     }
 
     #EndpointDLP Check
@@ -344,13 +343,12 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
         if($policy.EndpointDlpLocation.name -eq "All"){
             $endpointdlplocations += "All Enrolled Endpoints"
             $endpointdlplocationcounts = "All Users"
-            #write-host "Endpoint DLP is enabled for" $endpointdlplocations
         }
 
         else{
             foreach($endpointitem in $policy.EndpointDlpLocation) {
-                try{$endpointuser = Get-AzureADUser -ObjectId $endpointitem.immutableidentity -ErrorAction SilentlyContinue}
-                catch{$endpointgroup = get-azureadgroup -ObjectId $endpointitem.immutableidentity -ErrorAction SilentlyContinue}
+                try{$endpointuser = Get-MgUser -UserId $endpointitem.immutableidentity -ErrorAction SilentlyContinue}
+                catch{$endpointgroup = Get-MgGroup -GroupId $endpointitem.immutableidentity -ErrorAction SilentlyContinue}
             
                 if ($endpointuser.ObjectId -eq $endpointitem.immutableidentity){
                     $usertext = "User: " 
@@ -358,9 +356,10 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
                     $endpointdlplocations += $endpointdata
                     $endpointdlplocationcounts++
                 }
+
                 elseif($endpointgroup.Objectid -eq $endpointitem.immutableidentity){
                     #get the count of the members of each team group
-                    try{$endpointgroupcount = (Get-AzureADGroupMember -ObjectId $endpointgroup.objectid -all $true).Count}
+                    try{$endpointgroupcount = (Get-MgGroupMember -GroupId $endpointgroup.id -all -ErrorAction SilentlyContinue).Count}
                     catch{$endpointgroupcount = 0}
                     $grouptext = "Group: " 
                     $endpointdata = $grouptext + $endpointitem.Displayname + " (" + $endpointgroupcount + ")"
@@ -369,8 +368,6 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
                 }
             }
         }
-            
-        #write-host "Endpoint DLP is enabled for" $endpointdlplocations
     }
 
     #MDCA Check
@@ -393,7 +390,6 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
                 $onpremlocationscount++
             }
         }
-        #write-host "On-Prem DLP is enabled for" $onpremlocations    
     }
 
     $dlphashtable=[Ordered]@{
@@ -418,6 +414,7 @@ Write-Host "Processing the policy:" $policy.Name -ForegroundColor Green
     $dlppolicydetailtable += $dlppolicydetailobject    
     return $dlppolicydetailtable
 }
+
 function get-dlppolicyruledetails($param){
     $dlppolicyrule = Get-DlpCompliancerule  -Policy $param
     $sitlist = @()
@@ -436,37 +433,57 @@ function get-dlppolicyruledetails($param){
         ### new content to deal with advaned rules
 
         if($rule.IsAdvancedRule -like 'True'){
-            #### do all the code for the advanced processing
+            #### the below activities are a force parse of the json blob that is present in the value.
             $rulejson = $rule.AdvancedRule | convertfrom-json | Select-Object -ExpandProperty Condition | Select-Object -ExpandProperty SubConditions
-
+        
             foreach ($ruleitem in $rulejson){
                 if ($ruleitem.ConditionName -like "ContentContainsSensitiveInformation"){
-                    $sitgroups = $ruleitem | Select-Object -ExpandProperty Value | Select-Object -ExpandProperty Groups 
-
-                    foreach($sitgroup in $sitgroups){
-                    $sitruledetails = $sitgroup | Select-Object -ExpandProperty SensitiveTypes
-
-                        foreach ($sitrule in $sitruledetails){
-                            $shash = [ordered]@{
-                            RuleGroup = $rulename
-                            Name = $sitrule.name
-                            RuleEnabled = $ruledisabled
-                            ClassifierType = if($sitrule.ClassifierType){$sitrule.ClassifierType}else{"Content"}
-                            MinCount = $sitrule.Mincount
-                            MaxCount = $sitrule.Maxcount
-                            ConfidenceLevel = $sitrule.Confidencelevel
-                            }
-                        $sobject = New-Object PSObject -Property $shash
-                        $sitlist += $sobject
+                #this is the default approach for a rule that is created with a complex condition, we are testing to avoid the edge case listed below.
+                    if($ruleitem | Select-Object -ExpandProperty Value | Select-Object -ExpandProperty Groups -ErrorAction SilentlyContinue){
+                        $sitgroups = $ruleitem | Select-Object -ExpandProperty Value | Select-Object -ExpandProperty Groups 
+        
+                        foreach($sitgroup in $sitgroups){
+                        $sitruledetails = $sitgroup | Select-Object -ExpandProperty SensitiveTypes
+            
+                            foreach ($sitrule in $sitruledetails){
+                                $shash = [ordered]@{
+                                RuleGroup = $rulename
+                                Name = $sitrule.name
+                                RuleEnabled = $ruledisabled
+                                ClassifierType = if($sitrule.ClassifierType){$sitrule.ClassifierType}else{"Content"}
+                                MinCount = $sitrule.Mincount
+                                MaxCount = $sitrule.Maxcount
+                                ConfidenceLevel = $sitrule.Confidencelevel
+                                }
+                            $sobject = New-Object PSObject -Property $shash
+                            $sitlist += $sobject
+                            }                
                         }
-                    
                     }
-
+                    #if you had a 'simple' rule and then copied the rule but during the process also adjusted the workloads to flip the rule to complex
+                    #the JSON blob contianing the rule is not created the same way.  The below process will capture the data as presented in that specific case
+                    #If you ever go and 'edit' the rule, it will rebuild the conditions to look like the json blob that is processed above.
+                    else{
+                        $sitgroups = $ruleitem.Value
+                       
+                        foreach($sitgroup in $sitgroups){
+                                    $shash = [ordered]@{
+                                    RuleGroup = $rulename
+                                    Name = $sitgroup.name
+                                    RuleEnabled = $ruledisabled
+                                    ClassifierType = if($sitgroup.ClassifierType){$sitgroup.ClassifierType}else{"Content"}
+                                    MinCount = $sitgroup.Mincount
+                                    MaxCount = $sitgroup.Maxcount
+                                    ConfidenceLevel = $sitgroup.Confidencelevel
+                                    }
+                                $sobject = New-Object PSObject -Property $shash
+                                $sitlist += $sobject
+                                
+                            }
+                        }
+                    }
                 }
-
             }
-
-        }
 
         elseif($null -ne $rule.ContentContainsSensitiveInformation){
         
@@ -477,7 +494,7 @@ function get-dlppolicyruledetails($param){
                 foreach($group in $sitgroup){
                  $sensitivetypes = $group.sensitivetypes
                  $labels = $group.labels
-                     foreach($sitg in $sensitivetypes){
+                    foreach($sitg in $sensitivetypes){
                          $shash = [ordered]@{
                             RuleGroup = $rulename
                             Name = $sitg.name
@@ -486,21 +503,21 @@ function get-dlppolicyruledetails($param){
                             MinCount = $sitg.mincount
                             MaxCount = $sitg.maxcount
                             ConfidenceLevel = $sitg.confidencelevel
-                         }
-                         $sobject = New-Object PSObject -Property $shash
-                         $sitlist += $sobject
-                     }
-                     foreach($label in $labels){
+                        }
+                        $sobject = New-Object PSObject -Property $shash
+                        $sitlist += $sobject
+                    }
+                    foreach($label in $labels){
                         $lhash = [ordered]@{
                             RuleGroup = $rulename
                             LabelName = (get-label $label.name).DisplayName
                         }
-                         $labellist += $lhash
-                     }   
+                        $labellist += $lhash
+                    }   
                 }
-             }
-                 else{
-                 $sits = $rule.ContentContainsSensitiveInformation
+            }
+                else{
+                $sits = $rule.ContentContainsSensitiveInformation
                     foreach($sit in $sits){
                         $shash = [ordered]@{
                             RuleGroup = $rulename
@@ -510,16 +527,17 @@ function get-dlppolicyruledetails($param){
                             MinCount = $sit.mincount
                             MaxCount = $sit.maxcount
                             ConfidenceLevel = $sit.confidencelevel
-                         }
-                         $sobject = New-Object PSObject -Property $shash
-                         $sitlist += $sobject
-                     }
-                 }
+                        }
+                        $sobject = New-Object PSObject -Property $shash
+                        $sitlist += $sobject
+                    }
+                }
         }      
     }
     
     return $sitlist
-    }
+}
+
 function get-auditlogsummary(){
     $audittable = @()
     $auditlogpolicies = Get-UnifiedAuditLogRetentionPolicy
@@ -571,34 +589,40 @@ else {
         Write-Host 'Your choice is Yes, installing module'
         Write-Host "This will take several minutes with no visible progress, please be patient" -foregroundcolor Yellow -backgroundcolor Magenta
         Install-Module ExchangeOnlineManagement -SkipPublisherCheck -Force -Confirm:$false 
-    } else {
+    } 
+    else {
         Write-Host 'Please install the module manually to continue https://docs.microsoft.com/en-us/powershell/exchange/exchange-online-powershell-v2?view=exchange-ps'
         Exit
-}
+    }
 }
 
-if (get-installedmodule -Name AzureADPreview -ErrorAction SilentlyContinue) {
-    Write-Host "Azure AD Module Installed, Continuing with Script Execution"
+#check to see if the Microsoft Graph Modules are installed
+if (get-installedmodule -Name Microsoft.Graph -ErrorAction SilentlyContinue) {
+    Write-Host "Microsoft Graph Installed, Continuing with Script Execution"
 }
 else {
-    $title    = 'Azure AD Module is Not Installed'
+    $title    = 'Microsoft Graph is Not Installed'
     $question = 'Do you want to install it now?'
     $choices  = '&Yes', '&No'
 
     $decision = $Host.UI.PromptForChoice($title, $question, $choices, 1)
     if ($decision -eq 0) {
         Write-Host 'Your choice is Yes, installing module'
-        Install-Module AzureADPreview -SkipPublisherCheck -Force -Confirm:$false 
-    } else {
-        Write-Host 'Please install the module manually to continue https://docs.microsoft.com/en-us/powershell/azure/active-directory/install-adv2?view=azureadps-2.0'
+        Write-Host "This will take several minutes with no visible progress, please be patient" -foregroundcolor Yellow -backgroundcolor Magenta
+        Install-Module Microsoft.Graph -Scope CurrentUser -SkipPublisherCheck -Force -Confirm:$false 
+    }
+    else {
+        Write-Host 'Please install the module manually to continue https://docs.microsoft.com/en-us/powershell/microsoftgraph/overview?view=graph-powershell-beta'
         Exit
+    }
 }
-}
+
+Write-Host 'Connecting to the Microsoft Graph, Please logon in the new window' -ForegroundColor DarkYellow
+connect-MgGraph -Scopes 'User.Read.All','Organization.Read.All','Directory.Read.All'
 
 Write-Host 'Connecting to Security & Compliance Center. Please logon in the new window' -ForegroundColor DarkYellow
 Connect-IPPSSession
-Write-Host "Connecting to Azure AD. Please Logon in the new Window" -ForegroundColor DarkYellow
-Connect-AzureAD
+
 Write-Host "`r`n`r`nConnected to Microsoft 365, Continuing with Script`r`n`r`n" -ForegroundColor Yellow
 
 #######################
@@ -729,27 +753,25 @@ foreach ($item in $dlpsummarychart){
 }
 
 ###section 4, build our html file
-$tenantdetails = Get-AzureADTenantDetail
-$scriptrunner = Get-AzureADCurrentSessionInfo
+$tenantdetails = Get-MgOrganization
+$scriptrunner = Get-MgContext
+$domaindetails = (Get-MgDomain | Where-Object {$_.isInitial}).Id
 
 $reportstamp = "<p id='CreationDate'><b>Report Creation Date:</b> $(Get-Date)<br>
 <b>Tenant Name:</b> $($tenantdetails.DisplayName)<br>
 <b>Tenant ID:</b> $($scriptrunner.TenantID)<br>
-<b>Tenant Domain:</b> $($scriptrunner.TenantDomain)<br>
-<b>Executed by</b>: $($scriptrunner.Account)</p>
-"
+<b>Tenant Domain:</b> $($domaindetails)<br>
+<b>Executed by</b>: $($scriptrunner.Account)</p>"
 
 $reportintro = "<h1> Compliance Workshop: Policy Configuration Report</h1>
 <p><b>The following report shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
 <p>Units in <b>()</b> indicate the number of protected users or sites </p>"
 $reportintro+= $reportstamp
 
-
 $poeintro = "<h1> Compliance Workshop: Policy Configuration Report (POE Only)</h1>
 <p><b>The following report shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
 <p>Units in <b>()</b> indicate the number of protected users or sites </p>"
 $poeintro += $reportstamp
-
 
 $reportdetails = "<h2>Individual Policy Details<h2>
 </hr2>"
@@ -777,9 +799,19 @@ elseif($reporttype -match'POEReport'){
 #display report in browser
 Write-Host "`nReport file available at:" $outputfile -ForegroundColor Yellow -BackgroundColor Blue
 Write-host "`n`r"
-Start-Process $outputfile
+# Use the appropriate command to open the file in the default browser
+if ($IsMacOS -eq $true){ 
+	& open $outputfile
+}
+elseif ($IsLinux -eq $true){
+    & xdg-open $outputfile
+}
+else{
+    Start-Process $outputfile
+}
+
 
 #cleanup
 Write-Host "Disconnecting Services" -ForegroundColor Yellow
 Disconnect-ExchangeOnline -Confirm:$false -ErrorAction:SilentlyContinue  -InformationAction Ignore
-Disconnect-AzureAD -Confirm:$false -InformationAction Ignore
+Disconnect-MgGraph
