@@ -8,3 +8,5 @@ Individual Function Test/CommandSwitch.ps1
 Individual Function Test/permissionscheck.ps1
 Individual Function Test/testauditlog.ps1
 Individual Function Test/testupload.ps1
+Individual Function Test/filelector.ps1
+Individual Function Test/test.ps1
