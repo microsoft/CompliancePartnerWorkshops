@@ -4,7 +4,7 @@
 #####################################
 # Compliance Workshops M365 License Assessment Script
 # Author: Jim Banach
-# Version 1.5 - March, 2023
+# Version 1.6 - March, 2023
 ######################################
 
 
