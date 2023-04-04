@@ -18,6 +18,8 @@
 #prepare the envrionment
 param ([switch]$debug,$reportpath=$env:LOCALAPPDATA)
 
+$env:PNPPOWERSHELL_UPDATECHECK="false"
+
 If ($debug){
     $logpath = Join-path ($env:LOCALAPPDATA) ("CEPLOG_" + [string](Get-Date -UFormat %Y%m%d) + ".log")
     Start-Transcript -Path $logpath
@@ -40,8 +42,12 @@ else {
         Exit
 }
 }
+if (get-installedmodule -Name PnP.Powershell -MinimumVersion 2.1.1 -ErrorAction SilentlyContinue) {
+    Write-Host "Sharepoint PnP version 2.1 or higher found on this system, please remove before continuing (Uninstall-Module -Name pnp.powershell -MinimumVersion 2.1.0).`nThe workshop envrioment prep requires PNP powershell version 1.11 or 1.12" -ForegroundColor Red
+    Exit
+}
 
-if (get-installedmodule -Name PnP.Powershell -ErrorAction SilentlyContinue) {
+if (get-installedmodule -Name PnP.Powershell -MinimumVersion 1.11.0 -MaximumVersion 1.12.0 -ErrorAction SilentlyContinue) {
     Write-Host "SharePoint PnP Module Installed, Continuing with Script Execution"
 }
 else {
@@ -55,7 +61,7 @@ else {
         Write-Host "This will take several minutes with no visible progress, please be patient" -foregroundcolor Yellow -backgroundcolor Magenta
         #do this to force remove the old PNP module just in case it is still there
         Uninstall-Module SharePointPnPPowerShellOnline -Force -AllVersions -ErrorAction silentlycontinue
-        Install-Module pnp.powershell -SkipPublisherCheck -Force -Confirm:$false -WarningAction SilentlyContinue 
+        Install-Module pnp.powershell -SkipPublisherCheck -RequiredVersion 1.12.0 -Force -Confirm:$false -WarningAction SilentlyContinue 
     } 
     else {
         Write-Host 'Please install the module manually to continue https://pnp.github.io/powershell/articles/installation.html'
@@ -141,12 +147,12 @@ foreach ($adminuser in $adminusers){
         Add-RoleGroupMember -Identity "ComplianceAdministrator" -Member $adminemail
     }
 
-    if(Get-RoleGroupmember -Identity "ediscoveryManager" | Where-Object {$_.name -in $adminuser}){
+    if(Get-RoleGroupmember -Identity "eDiscoveryManager" | Where-Object {$_.name -in $adminuser}){
         Write-Host "$adminuser is already a member of eDiscovery Managers" -ForegroundColor Yellow
     }
     else{
         Write-Host "Adding $adminuser to eDiscovery Managers" -ForegroundColor Green
-        Add-RoleGroupMember -Identity "ediscoveryManager" -Member $adminemail
+        Add-RoleGroupMember -Identity "eDiscoveryManager" -Member $adminemail
     }
 
     if(Get-RoleGroupmember -Identity "ComplianceManagerAdministrators" | Where-Object {$_.name -in $adminuser}){
@@ -157,12 +163,12 @@ foreach ($adminuser in $adminusers){
         Add-RoleGroupMember -Identity "ComplianceManagerAdministrators" -Member $adminemail
     }
     
-    if(Get-RoleGroupmember -Identity "InsiderRiskmanagement" | Where-Object {$_.name -in $adminuser}){
+    if(Get-RoleGroupmember -Identity "InsiderRiskManagement" | Where-Object {$_.name -in $adminuser}){
         Write-Host "$adminuser is already a member of Insider Risk Management Administrators" -ForegroundColor Yellow
     }
     else{
         Write-Host "Adding $adminuser to Insider Risk Management Administrators" -ForegroundColor Green
-        Add-RoleGroupMember -Identity "InsiderRiskmanagement" -Member $adminemail
+        Add-RoleGroupMember -Identity "InsiderRiskManagement" -Member $adminemail
     }
 
     if(get-ediscoverycaseadmin | Where-Object {$_.name -in $adminuser}){
