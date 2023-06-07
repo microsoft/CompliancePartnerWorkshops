@@ -638,11 +638,13 @@ Write-Host "`r`n`r`nConnected to Microsoft 365, Continuing with Script`r`n`r`n" 
 #           attached to each policy and lists out any SITs that are being evaluated.  There are a number of
 #           other policy and rule settings that COULD be pulled, in this script we are focused on the settings
 #           that we are configuring as part of the workshops
-#section 3: we are creating a unified summary table for the top fo the report. This uses the chart created in 
+#section 3: we capture the current content searches,  we first pull the name of all the searches, then for each
+#           we capture the data again to identify which workloads are being scanned by a given content search. 
+#section 4: we are creating a unified summary table for the top fo the report. This uses the chart created in 
 #           section 1 and then combines that with a count of all of unique SITS in each policy along with a 
 #           count of all of the covered users in a given workload combining individually defined users and
 #           users in a group
-#section 4: this is where we are constructing the report itself.  It involves merging data from the prior two
+#section 5: this is where we are constructing the report itself.  It involves merging data from the prior two
 #           sections and then using convertto-html to place it all into a report that can be provided to the
 #           customer and submitted as part of the final Proof of Execution (POE) for the workshop
 #######################
@@ -766,39 +768,20 @@ $reportstamp = "<p id='CreationDate'><b>Report Creation Date:</b> $(Get-Date)<br
 <b>Tenant Domain:</b> $($domaindetails)<br>
 <b>Executed by</b>: $($scriptrunner.Account)</p>"
 
-$reportintro = "<h1> Compliance Workshop: Policy Configuration Report</h1>
-<p><b>The following report shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
+$reportintro = "<h1> Data Security Engagement: POE Report Details</h1>
+<p><b>The following report shows a snapshot of the current status of Content Search and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
+<p>Follow the guidance in the POE document for how to use these results as part of the POE Submission process.</p>
 <p>Units in <b>()</b> indicate the number of protected users or sites </p>"
-$reportintro+= $reportstamp
 
-$poeintro = "<h1> Compliance Workshop: Policy Configuration Report (POE Only)</h1>
-<p><b>The following report shows a snapshot of the current status of Audit and DLP Policy Configuration within the Microsoft 365 environment.</b> </p>
-<p>Units in <b>()</b> indicate the number of protected users or sites </p>"
-$poeintro += $reportstamp
 
-$reportdetails = "<h2>Individual Policy Details<h2>
-</hr2>"
+if($reporttype -match'POEReport'){
+    $poehtml = ($poechart | Where-Object {$_.Exchangeonline -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($searchoutput | Where-Object {$_.exchangelocation -like "all"} | Select-Object Name,ContentMatchQuery,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreationDate -Descending) |ConvertTo-Html -PreContent "</p><b>Content Search Results:</b>"
+    $poehtml += ($searchoutput | Where-Object {$_.SharePointLocation -like "all"} | Select-Object Name,ContentMatchQuery,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status) |ConvertTo-Html -PreContent "<h3>SharePoint Module</h3>$reportstamp <b>Content Search Results:</b>"
+    $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,Teams | Sort-Object -Property CreationDate | ConvertTo-Html -PreContent "<h3>Teams Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoints Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
 
-if($reporttype -match 'All'){
-    $poehtml = ($poechart | ConvertTo-Html -PreContent "<h2>Compliance Workshop DLP POE Summary</h2>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poethml += "<hr>"
-    #saving each of the individual reports here in case they are ever needed for troubleshooting the report rollup
-    #$summaryhtml = $dlppolicysummary | ConvertTo-Html -Fragment
-    #$policyhtml = $policycounts | convertto-html -Fragment
-    #$sithtml = $sitcounts | ConvertTo-Html -Fragment
-    Convertto-html -Head $header -Body "$reportintro $poehtml $auditchart $reportdetails $a" -Title "Compliance Workshop Policy Configuration Report" | Out-File $outputfile 
-}
-elseif($reporttype -match'POEReport'){
-    $poehtml = ($poechart | ConvertTo-Html -PreContent "<h2>Compliance Workshop DLP POE Summary</h2>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += ($poechart | Where-Object {$_.Exchangeonline -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange Module</h3>$reportstamp") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += ($searchoutput | Where-Object {$_.exchangelocation -like "all"} | Select-Object Name,ContentMatchQuery,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreationDate -Descending) |ConvertTo-Html -PreContent "<hr> <b>Content Search Results:</b>"
-    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoint DLP Policies</h3>$reportstamp") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    #$poehtml += ($poechart | Where-Object {$_.SharePoint -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,SharePoint | ConvertTo-Html -PreContent "<h3>SharePoint Module</h3>$reportstamp") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += ($searchoutput | Where-Object {$_.SharePointLocation -like "all"} | Select-Object Name,ContentMatchQuery,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status) |ConvertTo-Html -PreContent "<h3>SharePoint Module</h3>$reportstamp<hr> <b>Content Search Results:</b>"
-    $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,SITSUsed,Teams | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Teams Module</h3>$reportstamp") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += "<hr>"
-
-    Convertto-html -Head $header -Body "$poehtml" -Title "Data Security Engagement POE Report" | Out-File $outputfile 
+    Convertto-html -Head $header -Body "$reportintro $poehtml" | Out-File $outputfile 
 }
 
 #display report in browser
@@ -815,7 +798,6 @@ else{
     Start-Process $outputfile
 }
 
-
 #cleanup
 Write-Host "Disconnecting Services" -ForegroundColor Yellow
 Disconnect-ExchangeOnline -Confirm:$false -ErrorAction:SilentlyContinue  -InformationAction Ignore
@@ -826,12 +808,11 @@ Disconnect-MgGraph
 Creates a report of the configured DLP Policies in the Tenant
 
 .DESCRIPTION
-The DLP Policy Configuration Report is a PowerShell script based assessment that leverages the Microsoft Security and Compliance PowerShell and Microsoft Graph PowerShell to gather information about the current configuration of Data Loss Prevention (DLP) Policies within the tenant. The assessment will generate a report that provides a summary of all configured DLP Policies, details about protected workloads and locations, as well as Policy Rule details for each DLP Policy in the Microsoft tenant.
+The Data Security Engagement POE Report is a PowerShell script based assessment that leverages the Microsoft Security and Compliance PowerShell and Microsoft Graph PowerShell to gather information about the current configuration of Data Loss Prevention (DLP) Policies and Content Searches within the tenant to support the submission of the Proof of Execution document for the data security engagmenet. 
 
 .PARAMETER ReportType
 Specifies which products to display in the service summary:
-All (Default) - Provides detailed readout of relevant configuration settings for each DLP Policy
-PoEReport - Builds the reports for submission of the Proof of Execution
+PoEReport (Default)- Builds the reports for submission of the Proof of Execution
 
 .PARAMETER ReportPath
 Specifics the location to save the report and temporary files.  
@@ -839,16 +820,12 @@ Default location is the local appdata folder for the logged on user on Windows P
 MacOS and Linux clients will always prompt for the path
 
 .EXAMPLE
-PS> .\WorkshopPOEReport.ps1
+PS> .\EngagementPOEReport.ps1
 Provides the default report output for all DLP Policy information in the customers tenant. 
 
 .EXAMPLE
-PS> .\WorkshopPOEReport.ps1 -reportpath c:\temp
+PS> .\EngagementPOEReport.ps1 -reportpath c:\temp
 Saves the report output to the folder c:\temp
-
-.EXAMPLE
-PS> .\ComplianceActivationAssessment.ps1 -ReportType POEReport
-Generates the report in a format applicable for the Proof of Execution
 
 .LINK
 Find the most recent version of the script here:
