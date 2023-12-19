@@ -1,7 +1,13 @@
 # Project
 
-Scripts and Files to support the Compliance Partner Build Intent Workshops (https://aka.ms/mci/workshops)
+Scripts and Files to support the Compliance Partner Build Intent Engagements.
 
+## EngagementPOEReport
+Use the Engagement POE Report as part of the Data Security Engagement. Please see the delivery guide on how to use the output as part of the Proof of execution. The most recent version is 2.5 (published Dec 2023). This most recent version moves to a universal date format and is updated to support the most recent version of the Exchange Powershell Module with REST support (Required to connect to security and compliance powershell as of Nov 2023).
+
+### Current issues or limitations
+1) Current Version of the Script is not signed. This is planned for a future release.
+2) Current version has only been tested against Commercial Office 365 tenants. If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
 
 ## ComplianceActivationAssessment
 Use the ComplianceActivationAssesment.ps1 file as part of the Protect and Govern Sensitive Data Activator
