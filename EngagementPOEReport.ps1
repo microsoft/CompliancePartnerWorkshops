@@ -243,7 +243,7 @@ Write-Host "`r`n`r`nConnected to Microsoft 365, Continuing with Script`r`n`r`n" 
 #######################
 #script activities
 #each section below performs one part of the script
-#section 1: collects all of the DLP Policies and identifies which workloads are enabled
+#section 1: collects all of the DLP Policies 
 #section 2: works through each individual policy and gathers pertninant data about each DLP Policy including
 #           the locations (both users and groups) that are being evaulated. There are a number of
 #           other policy and rule settings that COULD be pulled, in this script we are focused on the settings
@@ -315,11 +315,11 @@ $reportintro = "<h1> Data Security Engagement: POE Report Details</h1>
 
 
 if($reporttype -match'POEReport'){
-    $poehtml = ($poechart | Where-Object {$_.Exchangeonline -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml = ($poechart | Where-Object {$_.Exchangeonline -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
     $poehtml += ($searchoutput | Where-Object {$_.exchangelocation -like "all"} | Select-Object Name,ContentMatchQuery,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreationDate -Descending) |ConvertTo-Html -PreContent "</p><b>Content Search Results:</b>"
     $poehtml += ($searchoutput | Where-Object {$_.SharePointLocation -like "all"} | Select-Object Name,ContentMatchQuery,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status) |ConvertTo-Html -PreContent "<h3>SharePoint Module</h3>$reportstamp <b>Content Search Results:</b>"
-    $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Teams | Sort-Object -Property CreationDate | ConvertTo-Html -PreContent "<h3>Teams Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and $_.PolicyMode -match "Enable"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoints Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Teams | Sort-Object -Property CreationDate | ConvertTo-Html -PreContent "<h3>Teams Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoints Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
 
     Convertto-html -Head $header -Body "$reportintro $poehtml" | Out-File $outputfile 
 }
