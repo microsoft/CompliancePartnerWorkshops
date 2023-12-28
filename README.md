@@ -3,11 +3,15 @@
 Scripts and Files to support the Compliance Partner Build Intent Engagements.
 
 ## EngagementPOEReport
-Use the Engagement POE Report as part of the Data Security Engagement. Please see the delivery guide on how to use the output as part of the Proof of execution. The most recent version is 2.5 (published Dec 2023). This most recent version moves to a universal date format and is updated to support the most recent version of the Exchange Powershell Module with REST support (Required to connect to security and compliance powershell as of Nov 2023).
+Use the Engagement POE Report as part of the Data Security Engagement. Please see the delivery guide on how to use the output as part of the Proof of execution. The most recent version is 3.0 (published Jan 2024). This most recent version moves to a universal date format and is updated to support the most recent version of the Exchange Powershell Module with REST support (Required to connect to security and compliance powershell as of Nov 2023).
+
+**V3.0 updates** 
+-Transition from Microsoft Graph Powershell to Exchange Online Powershell
+-Signed Script 
+
 
 ### Current issues or limitations
-1) Current Version of the Script is not signed. This is planned for a future release.
-2) Current version has only been tested against Commercial Office 365 tenants. If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
+1) Current version has only been tested against Commercial Office 365 tenants. If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
 
 ## ComplianceActivationAssessment
 Use the ComplianceActivationAssesment.ps1 file as part of the Protect and Govern Sensitive Data Activator
@@ -18,11 +22,11 @@ Follow the instructions in the workshop guide run the script and include the out
 2) Scripts have only been tested against English/Unicode lanuguages
 3) License Friendly Names MAY not exist for non commercial license SKUs
 
-## WorkshopPOEReport
+# #WorkshopPOEReport
 Use the workshoppoereport.ps1 file as part of the Protect and Govern Sensitive Data Activator
 Follow the instructions in the workshop guide run the script and include the output of the report as part of your final results for your customer
 
-### Current Issues and Limitations:
+###Current Issues and Limitations:
 1) The WorkshopPOE Report only works against Commercial Office 365 Tenants.  If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
 2) The WorkshopPOE Report currently uses the AzureAD powershell Module.  It will be updated to GraphAPI in a future version
 3) Scripts have only been tested against English/Unicode lanuguages
