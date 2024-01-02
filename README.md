@@ -7,7 +7,8 @@ Use the Engagement POE Report as part of the Data Security Engagement. Please se
 
 **V3.0 updates** 
 -Transition from Microsoft Graph Powershell to Exchange Online Powershell
--Signed Script 
+-Signed Script (the file should have 549 lines including trailing blank line after digital signature)
+-- A zip file version of the script is also available in the repository (EngagementPOEReport.zip)
 
 
 ### Current issues or limitations
