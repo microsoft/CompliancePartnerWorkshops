@@ -3,7 +3,11 @@
 Scripts and Files to support the Compliance Partner Build Intent Engagements.
 
 ## EngagementPOEReport
-Use the Engagement POE Report as part of the Data Security Engagement. Please see the delivery guide on how to use the output as part of the Proof of execution. The most recent version is 3.0 (published Jan 2024). This most recent version moves to a universal date format and is updated to support the most recent version of the Exchange Powershell Module with REST support (Required to connect to security and compliance powershell as of Nov 2023).
+Use the Engagement POE Report as part of the Data Security Engagement. Please see the delivery guide on how to use the output as part of the Proof of execution. The most recent version is 3.2 (published May 2024). This most recent version moves to a universal date format and is updated to support the most recent version of the Exchange Powershell Module with REST support (Required to connect to security and compliance powershell as of Nov 2023).
+
+**V3.2 updates**
+Changed sort order on Content Search to put most recent searches on top.
+-Signed Script (the file should have 547 lines including trailing blank line after digital signature)
 
 **V3.0 updates** 
 -Transition from Microsoft Graph Powershell to Exchange Online Powershell
@@ -11,43 +15,10 @@ Use the Engagement POE Report as part of the Data Security Engagement. Please se
 -- A zip file version of the script is also available in the repository (EngagementPOEReport.zip)
 
 
+
+
 ### Current issues or limitations
 1) Current version has only been tested against Commercial Office 365 tenants. If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
-
-## ComplianceActivationAssessment
-Use the ComplianceActivationAssesment.ps1 file as part of the Protect and Govern Sensitive Data Activator
-Follow the instructions in the workshop guide run the script and include the output of the report as part of your final results for your customer
-
-### Current Issues and Limitations
-1) The ComplianceActivationAssessment Report has only been tested against Commercial Office 365 Tenants.  If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
-2) Scripts have only been tested against English/Unicode lanuguages
-3) License Friendly Names MAY not exist for non commercial license SKUs
-
-# #WorkshopPOEReport
-Use the workshoppoereport.ps1 file as part of the Protect and Govern Sensitive Data Activator
-Follow the instructions in the workshop guide run the script and include the output of the report as part of your final results for your customer
-
-###Current Issues and Limitations:
-1) The WorkshopPOE Report only works against Commercial Office 365 Tenants.  If you need to connect to a GCC or Regional(China / Germany) Tenant, please update the powershell connection strings inside the code
-2) The WorkshopPOE Report currently uses the AzureAD powershell Module.  It will be updated to GraphAPI in a future version
-3) Scripts have only been tested against English/Unicode lanuguages
-
-## ComplianceEnvrionmentPrep
-Use the complianceenvriomentprep.ps1 file as part of the Mitigate Complinace and Prviacy Risks Activator
-Follow the instructions in the workshop guide and run the script to prepare the isolated Microsoft 365 Developer Tenant.
-
-### Current Issues and Limitations:
-1) The ComplianceEnvriomentPrep script is designed to be used against tenants that are provisioned as part of the Microsoft 365 Developer Subscription. It has not been tested against other Microsoft 365 envrioments
-2) use the startup switch '-debug' to enable basic logging and get an output of information logged to the screen
-3) Scripts have only been tested against English/Unicode lanuguages
-
-### Other Files
-The additional files in this repository are developed for the Mitigate Compliance and Privacy Risks Activator. Please refer to the engagement master delivery guide on how to leverage them
-1) Rulepack.xml - Custom sensitive information type rule pack
-2) DeleteFileFlow.zip - Power Automate Flow
-3) FileCopyFlow.zip - Power Automate Flow
-4) FileCreationFlow.zip - Power Automate Flow
-5) Mark8.zip - Sample files
 
 ## Contributing
 
