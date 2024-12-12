@@ -97,7 +97,7 @@ $header = @"
 </style>
 "@
 
-##define our functions##
+##define functions##
 function get-dlpolicysummary{
     #our global variables
     $dlptable = @()
@@ -235,9 +235,19 @@ Else{
 ### section 1 DLP Policies
 $dlppolicysummary = get-dlpolicysummary
 
-### section 2, gather the content search configuration
+### section 2, gather additional report details
 $comsearch = Get-ComplianceSearch -resultsize unlimited | Where-Object {$_.CreatedTime -gt $poedate}
 $searchoutput = foreach($s in $comsearch){Get-ComplianceSearch $s.name | Select-Object Name,ContentMatchQuery,@{Name='CreatedTime';Expression={$_.CreatedTime.ToString("MMM-dd-yyyy HH:mm:ss")}},@{Name='LastModifiedTime';Expression={$_.LastModifiedTime.ToString("MMM-dd-yyyy HH:mm:ss")}},@{Name='JobStartTime';Expression={$_.JobStartTime.ToString("MMM-dd-yyyy HH:mm:ss")}},CreatedBy,Status,*Location}
+
+##new section to begin capturing IRM policy
+if (Get-Command -Name Get-InsiderRiskPolicy -ErrorAction SilentlyContinue) { 
+    $irmpolcount = 1
+    $irmsearch = Get-InsiderRiskPolicy
+    $irmpol = foreach($s in $irmsearch){$s | Select-Object Name,InsiderRiskScenario,createdby,@{Name='CreatedTime';Expression={$_.WhenCreated.ToString("MMM-dd-yyyy HH:mm:ss")}},@{Name='LastModifiedTime';Expression={$_.WhenChanged.ToString("MMM-dd-yyyy HH:mm:ss")}},Enabled}
+} 
+else { 
+    $irmpolcount= 0
+}
 
 ### section ,3 construct a unified summary table
 $dlpsummarychart = $dlppolicysummary
@@ -281,10 +291,12 @@ $reportintro = "<h1> Data Security Engagement: POE Report Details</h1>
 
 if($reporttype -match'POEReport'){
     $poehtml = ($poechart | Where-Object {$_.Exchangeonline -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,ExchangeOnline | ConvertTo-Html -PreContent "<h3>Exchange Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += ($searchoutput | Where-Object {$_.exchangelocation -notlike ""} | Select-Object Name,ContentMatchQuery,ExchangeLocation,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreatedTime) |ConvertTo-Html -PreContent "</p><b>Content Search Results:</b>"
-    $poehtml += ($searchoutput | Where-Object {$_.SharePointLocation -notlike ""} | Select-Object Name,ContentMatchQuery,SharePointLocation,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreatedTime) |ConvertTo-Html -PreContent "<h3>SharePoint Module</h3>$reportstamp <b>Content Search Results:</b>"
+    $poehtml += ($searchoutput | Where-Object {$_.exchangelocation -notlike ""} | Select-Object Name,ContentMatchQuery,ExchangeLocation,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreatedTime) | ConvertTo-Html -PreContent "</p><b>Content Search Results:</b>"
+    $poehtml += ($searchoutput | Where-Object {$_.SharePointLocation -notlike ""} | Select-Object Name,ContentMatchQuery,SharePointLocation,CreatedTime,LastModifiedTime,JobStartTime,CreatedBy,Status | Sort-Object -Property CreatedTime) | ConvertTo-Html -PreContent "<h3>SharePoint Module</h3>$reportstamp <b>Content Search Results:</b>"
     $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Teams | Sort-Object -Property CreationDate | ConvertTo-Html -PreContent "<h3>Teams Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoints Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and ($_.DLPPolicyName -notlike "DSPM*" -and $_.DLPPolicyName -notlike "AI*")} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoints Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and ($_.DLPPolicyName -like "DSPM*" -or $_.DLPPolicyName -like "AI*")} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Data Security for AI Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
+    if ($irmpolcount = 1){$poehtml += ($irmpol | Where-Object {$_.Name -like "DSPM*" -or $_.Name -like "AI*"} | Select-Object Name,InsiderRiskScenario,createdby,CreatedTime,LastModifiedTime,Enabled | Sort-Object -Property WhenCreated) | ConvertTo-Html -PreContent "</p><b>IRM Policies:</b>"}
 
     Convertto-html -Head $header -Body "$reportintro $poehtml" | Out-File $outputfile 
 }
