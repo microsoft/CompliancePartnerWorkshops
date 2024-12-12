@@ -4,7 +4,7 @@
 ############################
 #Data Security Engagement - Engagment POE Report
 #Author: Jim Banach
-#Version 3.4 - November 2024
+#Version 3.5 - January 2025
 ##################################
 
 #project variables
@@ -200,10 +200,10 @@ else {
 }
 
 Write-Host 'Connecting to Security & Compliance Center. Please logon in the new window' -ForegroundColor DarkYellow
-Connect-IPPSSession 
+Connect-IPPSSession -ShowBanner:$false
 
 Write-Host 'Connecting to the Exchange Online, Please logon in the new window' -ForegroundColor DarkYellow
-Connect-ExchangeOnline 
+Connect-ExchangeOnline -ShowBanner:$false
 
 #check to make sure the account has access to the availble cmdlets
 Write-Host 'Checking Permissions' -ForegroundColor DarkYellow
@@ -239,15 +239,11 @@ $dlppolicysummary = get-dlpolicysummary
 $comsearch = Get-ComplianceSearch -resultsize unlimited | Where-Object {$_.CreatedTime -gt $poedate}
 $searchoutput = foreach($s in $comsearch){Get-ComplianceSearch $s.name | Select-Object Name,ContentMatchQuery,@{Name='CreatedTime';Expression={$_.CreatedTime.ToString("MMM-dd-yyyy HH:mm:ss")}},@{Name='LastModifiedTime';Expression={$_.LastModifiedTime.ToString("MMM-dd-yyyy HH:mm:ss")}},@{Name='JobStartTime';Expression={$_.JobStartTime.ToString("MMM-dd-yyyy HH:mm:ss")}},CreatedBy,Status,*Location}
 
-##new section to begin capturing IRM policy
+##new section to begin capturing IRM policy skip over if tenant does not have the IRM cmdlets loaded
 if (Get-Command -Name Get-InsiderRiskPolicy -ErrorAction SilentlyContinue) { 
-    $irmpolcount = 1
     $irmsearch = Get-InsiderRiskPolicy
     $irmpol = foreach($s in $irmsearch){$s | Select-Object Name,InsiderRiskScenario,createdby,@{Name='CreatedTime';Expression={$_.WhenCreated.ToString("MMM-dd-yyyy HH:mm:ss")}},@{Name='LastModifiedTime';Expression={$_.WhenChanged.ToString("MMM-dd-yyyy HH:mm:ss")}},Enabled}
 } 
-else { 
-    $irmpolcount= 0
-}
 
 ### section ,3 construct a unified summary table
 $dlpsummarychart = $dlppolicysummary
@@ -296,7 +292,7 @@ if($reporttype -match'POEReport'){
     $poehtml += ($poechart | Where-Object {$_.Teams -like "Yes*"} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Teams | Sort-Object -Property CreationDate | ConvertTo-Html -PreContent "<h3>Teams Module</h3>$reportstamp <b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
     $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and ($_.DLPPolicyName -notlike "DSPM*" -and $_.DLPPolicyName -notlike "AI*")} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Endpoints Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
     $poehtml += ($poechart | Where-Object {$_.Endpoints -like "Yes*" -and ($_.DLPPolicyName -like "DSPM*" -or $_.DLPPolicyName -like "AI*")} | Select-Object DLPPolicyName,CreationDate,PolicyMode,Endpoints | Sort-Object -Property CreationDate -Descending | ConvertTo-Html -PreContent "<h3>Data Security for AI Module</h3>$reportstamp<b>DLP Policies:</b>") -replace ("(\([0]\))","") -replace ("(s\d+\))","s)")
-    if ($irmpolcount = 1){$poehtml += ($irmpol | Where-Object {$_.Name -like "DSPM*" -or $_.Name -like "AI*"} | Select-Object Name,InsiderRiskScenario,createdby,CreatedTime,LastModifiedTime,Enabled | Sort-Object -Property WhenCreated) | ConvertTo-Html -PreContent "</p><b>IRM Policies:</b>"}
+    if ($irmpol.count -gt 0){$poehtml += ($irmpol | Where-Object {$_.Name -like "DSPM*" -or $_.Name -like "AI*"} | Select-Object Name,InsiderRiskScenario,createdby,CreatedTime,LastModifiedTime,Enabled | Sort-Object -Property WhenCreated) | ConvertTo-Html -PreContent "</p><b>IRM Policies:</b>"}
 
     Convertto-html -Head $header -Body "$reportintro $poehtml" | Out-File $outputfile 
 }
